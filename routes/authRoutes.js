@@ -7,6 +7,7 @@ const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 
 require("dotenv").config();
+const requireToken = require("../middleware/auth");
 
 // nodemailer
 async function mailer(recieveremail, code) {
@@ -24,7 +25,7 @@ async function mailer(recieveremail, code) {
   // send mail with defined transport object
   let info = await transporter.sendMail({
     from: `${process.env.EMAIL}`, // sender address
-    to: `${recieveremail}`,// list of receivers
+    to: `${recieveremail}`, // list of receivers
     subject: "Signup Verification", // Subject line
     text: `Your Verification Code is ${code}`, // plain text body
     html: `<b>Your Verification Code is ${code}</b>`, // html body
@@ -35,41 +36,38 @@ async function mailer(recieveremail, code) {
   console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
 }
 
-router.post('/verify', (req, res) => {
-    // console.log('sent by client - ', req.body);
-    const { firstName, lastName, email, password } = req.body;
-    if (!firstName || !lastName || !email || !password ) {
-        return res.status(422).json({ error: "Please add all the fields" });
+router.post("/verify", (req, res) => {
+  // console.log('sent by client - ', req.body);
+  const { firstName, lastName, email, password } = req.body;
+  if (!firstName || !lastName || !email || !password) {
+    return res.status(422).json({ error: "Please add all the fields" });
+  }
+
+  User.findOne({ email: email }).then(async (savedUser) => {
+    if (savedUser) {
+      return res.status(422).json({ error: "Invalid Credentials" });
     }
-
-
-    User.findOne({ email: email })
-        .then(async (savedUser) => {
-            if (savedUser) {
-                return res.status(422).json({ error: "Invalid Credentials" });
-            }
-            try {
-
-                let VerificationCode = Math.floor(100000 + Math.random() * 900000);
-                let user = [
-                    {
-                        firstName,
-                        lastName,
-                        email,
-                        password,
-                        VerificationCode
-                    }
-                ]
-                await mailer(email, VerificationCode);
-                res.send({ message: "Verification Code Sent to your Email", udata: user });
-            }
-            catch (err) {
-                console.log(err);
-            }
-        })
-
-
-})
+    try {
+      let VerificationCode = Math.floor(100000 + Math.random() * 900000);
+      let user = [
+        {
+          firstName,
+          lastName,
+          email,
+          password,
+          VerificationCode,
+        },
+      ];
+      await mailer(email, VerificationCode);
+      res.send({
+        message: "Verification Code Sent to your Email",
+        udata: user,
+      });
+    } catch (err) {
+      console.log(err);
+    }
+  });
+});
 
 router.post("/signup", (req, res) => {
   //   res.send('Welcome');
@@ -127,6 +125,18 @@ router.post("/login", (req, res) => {
       return res.status(422).send({ error: error.message });
     }
   });
+});
+
+router.get("/profile", requireToken, (req, res) => {
+  const current_user = req.user;
+
+  res
+    .status(200)
+    .send({
+      firstName: current_user.firstName,
+      lastName: current_user.lastName,
+      email: current_user.email,
+    });
 });
 
 module.exports = router;
