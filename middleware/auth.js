@@ -12,7 +12,8 @@ module.exports = (req, res, next) => {
     return res.status(401).send({ error: "token not assigned to you " });
   }
 
-  const token = authorization.replace("Bearer ", "");
+  const data = authorization.replace("Bearer ", "");
+  const token = data.replace(/"/g, '');
   // console.log(token);
 
   jwt.verify(token, process.env.JWT_SECRET,(error, payload) => {

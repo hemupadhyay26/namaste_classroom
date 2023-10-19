@@ -137,7 +137,42 @@ router.get("/profile", requireToken, (req, res) => {
     firstName: current_user.firstName,
     lastName: current_user.lastName,
     email: current_user.email,
+    gender: current_user.gender,
+    age: current_user.age,
+    address: current_user.address,
+    phoneNo: current_user.phoneNo,
   });
+});
+router.post("/profile", requireToken, async (req, res) => {
+  try {
+    const current_user = req.user;
+
+    const userData = await User.findByIdAndUpdate(
+      { _id: current_user._id },
+      {
+        $set: {
+          firstName: req.body.firstName,
+          lastName: req.body.lastName,
+          email: req.body.email,
+          age: req.body.age,
+          address: req.body.address,
+          gender: req.body.gender,
+          phoneNo: req.body.phoneNo,
+        },
+      }
+    );
+    res.send("Profile Updated");
+  } catch (error) {
+    res.send("error message" + error.message);
+  }
+  // current_user.firstName = firstName;
+  // current_user.lastName = lastName;
+  // current_user.email = email;
+  // current_user.gender = gender;
+  // current_user.phoneNo = phoneNo;
+  // current_user.age = age;
+  // current_user.address = address;
+  // res.send("done modification");
 });
 
 // profile photo request
@@ -342,23 +377,21 @@ router.put("/rooms/:id", (req, res) => {
   }
 });
 
-
 // Delete a booking
-router.delete('/rooms/:id/:bookingId', (req, res) => {
-  const { id } = req.params
-  const { bookingId } = req.params
+router.delete("/rooms/:id/:bookingId", (req, res) => {
+  const { id } = req.params;
+  const { bookingId } = req.params;
   Room.findByIdAndUpdate(
     id,
     { $pull: { bookings: { _id: bookingId } } },
     { new: true }
   )
-    .then(room => {
-      res.status(201).json(room)
+    .then((room) => {
+      res.status(201).json(room);
     })
-    .catch(error => {
-      res.status(400).json({ error })
-    })
-})
-
+    .catch((error) => {
+      res.status(400).json({ error });
+    });
+});
 
 module.exports = router;
