@@ -141,11 +141,13 @@ router.get("/profile", requireToken, (req, res) => {
     age: current_user.age,
     address: current_user.address,
     phoneNo: current_user.phoneNo,
+    profile: current_user.profile,
   });
 });
 router.post("/profile", requireToken, async (req, res) => {
   try {
     const current_user = req.user;
+    console.log(req.body);
 
     const userData = await User.findByIdAndUpdate(
       { _id: current_user._id },
@@ -158,6 +160,7 @@ router.post("/profile", requireToken, async (req, res) => {
           address: req.body.address,
           gender: req.body.gender,
           phoneNo: req.body.phoneNo,
+          profile: req.body.profile,
         },
       }
     );
@@ -197,8 +200,8 @@ const upload = multer({
     acl: "public-read",
     bucket: BUCKET,
     key: function (req, file, cb) {
-      console.log(file);
-      cb(null, Date.now() + file.originalname);
+      // console.log(file);
+      cb(null, file.originalname);
     },
   }),
 });
@@ -207,7 +210,31 @@ router.post(
   "/upload",
   upload.single("profile"),
   async function (req, res, next) {
-    res.json(req.file.location);
+    // res.json(req.file.location);
+    const filename = req.file.originalname;
+    console.log(filename);
+    let params = { Bucket: BUCKET, Key: filename };
+    s3.getSignedUrl("getObject", params, async function (err, url) {
+      if (err) {
+        console.log(err);
+      }
+      res.send({
+        url: url,
+        filename: filename,
+      });
+      // const current_user = req.user;
+      // console.log(req.body);
+
+      // const userData = await User.findByIdAndUpdate(
+      //   { _id: current_user._id },
+      //   {
+      //     $set: {
+      //       profile: filename
+      //     },
+      //   }
+      // );
+      // res.send("Profile Updated");
+    });
   }
 );
 
@@ -215,6 +242,18 @@ router.get("/list", async (req, res) => {
   let r = await s3.listObjectsV2({ Bucket: BUCKET }).promise();
   let x = r.Contents.map((item) => item.Key);
   res.send(x);
+});
+
+// extract URL
+router.get("/url/:filename", async (req, res) => {
+  const filename = req.params.filename;
+  let params = { Bucket: BUCKET, Key: filename };
+  s3.getSignedUrl("getObject", params, function (err, url) {
+    if (err) {
+      console.log(err);
+    }
+    res.send(url);
+  });
 });
 
 router.get("/download/:filename", async (req, res) => {
@@ -260,9 +299,10 @@ const durationHours = (bookingStart, bookingEnd) => {
 };
 
 // Make a booking
-router.put("/rooms/:id", (req, res) => {
+router.put("/rooms/:id", requireToken, (req, res) => {
   const { id } = req.params;
-
+  // const current_user = req.user;
+  console.log(req.boby);
   // If the recurring array is empty, the booking is not recurring
   if (req.body.recurring.length === 0) {
     Room.findByIdAndUpdate(
@@ -270,7 +310,7 @@ router.put("/rooms/:id", (req, res) => {
       {
         $addToSet: {
           bookings: {
-            user: req.body.user,
+            user: req.user,
             // The hour on which the booking starts, calculated from 12:00AM as time = 0
             startHour: dateAEST(req.body.bookingStart).format("H.mm"),
             // The duration of the booking in decimal format
@@ -392,6 +432,29 @@ router.delete("/rooms/:id/:bookingId", (req, res) => {
     .catch((error) => {
       res.status(400).json({ error });
     });
+});
+
+// Load user bookings
+
+router.get("/mybookings", requireToken, async (req, res) => {
+  // const current_user = ;
+  const userId = req.user._id;
+  console.log(userId);
+  try {
+    const bookings = await Room.find({
+      "bookings.user": userId,
+    }).populate("bookings.user");
+    if (bookings.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No bookings found for this user." });
+    }
+
+    res.status(201).json(bookings);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error fetching user bookings." });
+  }
 });
 
 module.exports = router;
