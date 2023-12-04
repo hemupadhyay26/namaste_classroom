@@ -5,6 +5,7 @@ const bcrypt = require("bcrypt");
 const User = mongoose.model("User");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
+// const Room =  mongoose.model("Room")
 
 const moment = require("moment");
 const momentTimezone = require("moment-timezone");
@@ -414,6 +415,47 @@ router.put("/rooms/:id", requireToken, (req, res) => {
       .catch((error) => {
         res.status(400).json({ error });
       });
+  }
+});
+
+router.post("/filter", async (req, res) => {
+  const { floor, capacity } = req.body;
+  // console.log(floor);
+  // console.log(capacity);
+
+  try {
+    let filteredRooms;
+
+    if (floor && floor.length > 0) {
+      if (capacity && capacity.length > 0) {
+        // Find rooms with both specified floor and capacity
+        filteredRooms = await Room.find({
+          floor: { $in: floor },
+          capacity: { $in: capacity },
+        });
+
+        if (filteredRooms.length === 0) {
+          // If no rooms with specific capacity on specified floors, find rooms with higher capacities on the specified floor
+          filteredRooms = await Room.find({
+            floor: { $in: floor },
+            capacity: { $gte: Math.max(...capacity.map(c => parseInt(c))) }, // Search for capacities greater than or equal to the highest capacity in the capacity array
+          });
+        }
+      } else {
+        // If only floor filter is provided
+        filteredRooms = await Room.find({ floor: { $in: floor } });
+      }
+    } else if (capacity && capacity.length > 0) {
+      // If only capacity filter is provided
+      filteredRooms = await Room.find({ capacity: { $in: capacity } });
+    } else {
+      // If no filters are provided, return all rooms
+      filteredRooms = await Room.find();
+    }
+
+    res.json(filteredRooms);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
