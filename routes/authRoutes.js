@@ -303,7 +303,7 @@ const durationHours = (bookingStart, bookingEnd) => {
 router.put("/rooms/:id", requireToken, (req, res) => {
   const { id } = req.params;
   // const current_user = req.user;
-  console.log(req.boby);
+  // console.log(req.boby);
   // If the recurring array is empty, the booking is not recurring
   if (req.body.recurring.length === 0) {
     Room.findByIdAndUpdate(
@@ -317,7 +317,7 @@ router.put("/rooms/:id", requireToken, (req, res) => {
             // The duration of the booking in decimal format
             duration: durationHours(req.body.bookingStart, req.body.bookingEnd),
             // Spread operator for remaining attributes
-            roomId: id,
+            // roomId: id,
             ...req.body,
           },
         },
