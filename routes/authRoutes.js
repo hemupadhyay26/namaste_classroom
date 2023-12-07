@@ -481,7 +481,7 @@ router.delete("/rooms/:id/:bookingId", (req, res) => {
 router.get("/mybookings", requireToken, async (req, res) => {
   // const current_user = ;
   const userId = req.user._id;
-  console.log(userId);
+  // console.log(userId);
   try {
     const bookings = await Room.find({
       "bookings.user": userId,
@@ -498,5 +498,25 @@ router.get("/mybookings", requireToken, async (req, res) => {
     res.status(500).json({ message: "Error fetching user bookings." });
   }
 });
+
+
+router.get("/available-classes", async (req, res) => {
+  try {
+    const today = moment().startOf('day'); // Get the start of today
+
+    // Find rooms that have available classes for today
+    const availableClasses = await Room.find({
+      "bookings.bookingStart": {
+        $gte: today.toDate(), // Booking start date is greater than or equal to today
+        $lt: moment(today).endOf('day').toDate() // Booking start date is less than end of today
+      }
+    }).populate('bookings.roomId', 'name floor'); // Populate the room details
+
+    res.json(availableClasses);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 
 module.exports = router;
