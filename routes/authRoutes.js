@@ -479,9 +479,7 @@ router.delete("/rooms/:id/:bookingId", (req, res) => {
 // Load user bookings
 
 router.get("/mybookings", requireToken, async (req, res) => {
-  // const current_user = ;
   const userId = req.user._id;
-  // console.log(userId);
   try {
     const bookings = await Room.find({
       "bookings.user": userId,
