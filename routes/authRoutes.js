@@ -119,6 +119,7 @@ router.post("/login", (req, res) => {
             { _id: savedUser._id },
             process.env.JWT_SECRET
           );
+          console.log(token);
           res.send({ token });
         } else {
           res.status(422).send({ error: "Invalid Credentials" });
@@ -486,7 +487,7 @@ router.get("/mybookings", requireToken, async (req, res) => {
     }).populate("bookings.user");
     if (bookings.length === 0) {
       return res
-        .status(404)
+        .status(201)
         .json({ message: "No bookings found for this user." });
     }
 
