@@ -40,6 +40,10 @@ async function mailer(recieveremail, code) {
   console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
 }
 
+app.get('/health', (req, res) => {
+  res.status(200).send('OK')
+});
+
 router.post("/verify", (req, res) => {
   // console.log('sent by client - ', req.body);
   const { firstName, lastName, email, password } = req.body;
