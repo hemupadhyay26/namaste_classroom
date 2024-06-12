@@ -488,7 +488,7 @@ router.get("/mybookings", requireToken, async (req, res) => {
     if (bookings.length === 0) {
       return res
         .status(201)
-        .json({ message: "No bookings found for this user." });
+        .json();
     }
 
     res.status(201).json(bookings);
