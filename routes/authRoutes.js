@@ -40,7 +40,7 @@ async function mailer(recieveremail, code) {
   console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
 }
 
-app.get('/', (req, res) => {
+router.get('/', (req, res) => {
   res.status(200).send('OK')
 });
 
